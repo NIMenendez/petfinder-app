@@ -92,8 +92,6 @@ export function initEditProfile(params: { goTo: (arg: string) => void }): HTMLEl
         <form>
           <label for="name">Nombre:</label>
           <input type="text" id="name" name="name" required>
-          <label for="location">Localidad:</label>
-          <input type="text" id="location" name="location" required>
           <button type="submit" class="save-changes-button">Guardar cambios</button>
         </form>
       </div>

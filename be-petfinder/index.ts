@@ -1,9 +1,10 @@
-import sequelize from "./models/connection/connection"
-import { Op } from "sequelize"
 import express, { Request, Response, NextFunction } from "express"
-import {User, Pet, Report} from "./models/models"
-import { client } from "./lib/algolia"
 import cors from "cors"
+import { createAuthUser, authenticateUser, verifyToken, verifyTokenAndOwnership, AuthenticatedRequest, checkUserOwnership } from "./controllers/auth";
+import { getUserById, getUserPets, updateUserPassword, updateUserName } from "./controllers/users";
+import { createLostPet, updatePetStatusToFound, updatePetData, getPetsNearby, verifyPetOwnership } from "./controllers/pets";
+import { reportPetSighting } from "./controllers/reports";
+
 
 
 const app = express();
@@ -22,103 +23,224 @@ const corsOptions = {
 }
 app.use(cors(corsOptions))
 
-// //Funcion auxiliar para formatear el body para Algolia
-// function bodyToIndex(body:any){
-//   const res : any = {};
+//Registro de usuario (Sign up)(nuevo usuario y auth)
+app.post("/auth", async (req, res) => {
+  const { email, password, name } = req.body
 
-//   if(body.nombre){
-//     res.nombre = body.nombre
-//   }
-//   if(body.rubro){
-//     res.rubro = body.rubro
-//   }
-//   if(body.lat && body.lng){
-//     res._geoloc = {
-//       lat: body.lat,
-//       lng: body.lng
-//     }
-//   }  
-//   return res
-// }
+  const { user, created, authUser, authCreated } = await createAuthUser(email, password, name)
 
-// //Crear un nuevo comercio
-// app.post("/comercios", async (req, res)=> {
-//   const newComercio = await Comercio.create(req.body)
+  if (created && authCreated) {
+    res.status(201).json({ message: "Usuario creado exitosamente", userId: user.get("id") })
+  } else {
+    res.status(409).json({ error: "El email ya está registrado" })
+  }
+})
 
-//   const algoliaRes = await client.saveObjects({
-//     indexName: 'dev_COMERCIOS',
-//     objects: [
-//       {
-//         objectID: newComercio.get("id"),
-//         nombre: newComercio.get("nombre"),
-//         rubro: newComercio.get("rubro"),
-//         _geoloc: {
-//           lat: newComercio.get("lat"),
-//           lng: newComercio.get("lng")
-//         }
-//       }
-//     ]
-//   });
+//Login de usuario (Sign in)
+app.post("/auth/token", async (req, res) => {
 
-//   res.json(newComercio)
-// })
-
-
-// //Obtener todos los comercios
-// app.get("/comercios", async (req, res)=> {
-//   const allComercios = await Comercio.findAll({})
-//   res.json(allComercios)
-// })
-
-// //Obtener un comercio por su ID
-// app.get("/comercios/:id", async (req, res) => {
-//   const comercio = await Comercio.findByPk(req.params.id)
-//   res.json(comercio)
-// })
-
-// //Actualizar un comercio
-// app.put("/comercios/:id", async (req, res) => {
-//   const updatedComercio = Comercio.update(req.body, {
-//     where: {
-//       id: req.params.id
-//     }
-//   })
-
-//   const indexItem = bodyToIndex(req.body)
-
-//   const algoliaRes = await client.partialUpdateObjects({
-//     indexName: 'dev_COMERCIOS',
-//     objects: [
-//       {
-//         objectID: req.params.id,
-//         nombre: indexItem.nombre,
-//         rubro: indexItem.rubro,
-//         _geoloc: indexItem._geoloc
-//       }
-//     ],
-//     createIfNotExists: false
-//   });
-
-//   res.json(updatedComercio)
-// })
-
-
-// //Obtener los comercios cerca de una ubicacion geografica
-// app.get("/comercios-cerca-de", async (req, res) => {
+  const { email, password } = req.body
   
-//   const {lat, lng} = req.query
+  await authenticateUser(email, password)
+    .then((token) => {
+      res.status(200).json({ token: token })
+    })
+    .catch((error) => {
+      res.status(401).json({ error: error.message })
+    })
 
-//   const algoliaRes = await client.searchSingleIndex({ 
-//     indexName: 'dev_COMERCIOS',
-//     searchParams: {     
-//       aroundLatLng: `${lat}, ${lng}`,
-//       aroundRadius: 10000,
-//     }
-//   })
+});
 
-//   const results = algoliaRes.hits
+//Acceder a los datos del usuario
+app.get("/users/:id", verifyTokenAndOwnership, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.params.id;
+    const authenticatedUserId = req.user?.id;
 
-//   res.json(results)
-// })
+    // Verificar que el usuario solo acceda a sus propios datos
+    if (!checkUserOwnership(authenticatedUserId, userId)) {
+      return res.status(403).json({ 
+        error: "Acceso denegado. Solo puedes acceder a tus propios datos." 
+      });
+    }
 
+    const user = await getUserById(parseInt(userId));
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+//Editar nombre de usuario
+app.patch("/users/userdata/:id", verifyTokenAndOwnership, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.params.id;
+    const { name } = req.body;
+
+    // Verificar que el usuario solo edite sus propios datos
+    if (!checkUserOwnership(req.user?.id, userId)) {
+      return res.status(403).json({ 
+        error: "Acceso denegado. Solo puedes editar tus propios datos." 
+      });
+    }
+
+    await updateUserName(parseInt(userId), name);
+    
+    res.json({ message: "Datos actualizados exitosamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+//Editar contraseña de usuario
+app.patch("/users/password/:id", verifyTokenAndOwnership, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.params.id;
+    const { oldPassword, newPassword } = req.body;
+
+    await updateUserPassword(parseInt(userId), oldPassword, newPassword);
+    res.json({ message: "Contraseña actualizada exitosamente" });
+  } catch (error: any) {
+    if (error.message === "Contraseña antigua incorrecta") {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  }
+});
+
+//Crear mascota perdida
+app.post("/pets", verifyToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { name, lat, lng, imageUrl } = req.body;
+    const userId = req.user?.id;
+    
+    // Validar que todos los campos requeridos estén presentes
+    if (!name || !lat || !lng || !userId) {
+      return res.status(400).json({ 
+        error: "Faltan campos requeridos: name, lat, lng son obligatorios" 
+      });
+    }
+    
+    const result = await createLostPet(userId, name, lat, lng, imageUrl);
+    res.status(201).json({ 
+      message: "Mascota perdida reportada exitosamente",
+      petId: result.get("id")
+    });
+  } catch (error: any) {
+    console.error("Error al crear mascota perdida:", error.message);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+//Actualizar un reporte de mascota perdida
+app.patch("/pets/:id", verifyToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const petId = req.params.id;
+    const userId = req.user?.id;
+    const { name, lat, lng, imageUrl } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Usuario no autenticado" });
+    }
+
+    // Construir objeto de updates solo con los campos proporcionados
+    const updates: any = {};
+    if (name !== undefined) updates.name = name;
+    if (lat !== undefined) updates.lat = lat;
+    if (lng !== undefined) updates.lng = lng;
+    if (imageUrl !== undefined) updates.imageUrl = imageUrl;
+
+    // Verificar que al menos un campo fue proporcionado
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ 
+        error: "Se debe proporcionar al menos un campo para actualizar (name, lat, lng, imageUrl)" 
+      });
+    }
+
+    await updatePetData(parseInt(petId), userId, updates);
+    
+    const updatedFields = Object.keys(updates).join(', ');
+    res.json({ 
+      message: "Datos de la mascota actualizados exitosamente",
+      updatedFields: updatedFields
+    });
+    
+  } catch (error: any) {
+    if (error.message === "Mascota no encontrada") {
+      return res.status(404).json({ error: "Mascota no encontrada" });
+    }
+    if (error.message === "No tienes permisos para modificar esta mascota") {
+      return res.status(403).json({ error: "No tienes permisos para modificar esta mascota" });
+    }
+    console.error("Error actualizando mascota:", error.message);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+//Acceder a los reportes de un usuario
+app.get("/users/:id/pets", verifyTokenAndOwnership, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.params.id;
+    const authenticatedUserId = req.user?.id;
+    // Verificar que el usuario solo acceda a sus propias mascotas
+    if (!checkUserOwnership(authenticatedUserId, userId)) {
+      return res.status(403).json({ 
+        error: "Acceso denegado. Solo puedes ver tus propias mascotas." 
+      });
+    }
+
+    const pets = await getUserPets(parseInt(userId));
+    res.json(pets);
+  } catch (error) {
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+//Marcar una mascota como encontrada
+app.patch("/pets/:id/found", verifyToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const petId = req.params.id;
+    const userId = req.user?.id;
+    
+    // Verificar que la mascota pertenece al usuario
+    const isOwner = await verifyPetOwnership(parseInt(petId), userId);
+    if (!isOwner) {
+      return res.status(403).json({ 
+        error: "No tienes permisos para modificar esta mascota" 
+      });
+    }
+    
+    await updatePetStatusToFound(parseInt(petId), false);
+    res.json({ message: "Mascota marcada como encontrada" });
+  } catch (error: any) {
+    if (error.message === "Mascota no encontrada") {
+      return res.status(404).json({ error: "Mascota no encontrada" });
+    }
+    console.error("Error marcando mascota como encontrada:", error.message);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+//Acceder a todos los reportes de mascotas perdidas de la zona
+app.get("/pets", async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+    const pets = await getPetsNearby(parseFloat(lat as string), parseFloat(lng as string));
+    res.json(pets);
+  } catch (error) {
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+//Enviar un reporte de avistamiento de mascota perdida
+app.post("/reports", async (req, res) => {
+  try {
+    const { petId, reporterPhone, reporterName, description } = req.body;
+    await reportPetSighting(petId, reporterPhone, reporterName, description);
+    res.status(201).json({ message: "Reporte de avistamiento enviado exitosamente" });
+  } catch (error) {
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
 

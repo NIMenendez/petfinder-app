@@ -1,15 +1,25 @@
 import { Model, DataTypes } from "sequelize"
 import sequelize from "./connection/connection"
 
+
 export class Pet extends Model {}
 
 Pet.init({
   name: {type: DataTypes.STRING},
   status_lost: {type: DataTypes.BOOLEAN},
-  location: {type: DataTypes.STRING},
-  description: {type: DataTypes.TEXT},
+  lat: {type: DataTypes.FLOAT},
+  lng: {type: DataTypes.FLOAT},
   imageUrl: {type: DataTypes.STRING},
-  reporterId: {type: DataTypes.INTEGER}
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE'
+  }
 }, {
   sequelize,
   modelName: "pet"
