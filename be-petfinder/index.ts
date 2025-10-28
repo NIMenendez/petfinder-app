@@ -3,7 +3,7 @@ import cors from "cors"
 import { createAuthUser, authenticateUser, verifyToken, verifyTokenAndOwnership, AuthenticatedRequest, checkUserOwnership } from "./controllers/auth";
 import { getUserById, getUserPets, updateUserPassword, updateUserName } from "./controllers/users";
 import { createLostPet, updatePetStatusToFound, updatePetData, getPetsNearby, verifyPetOwnership } from "./controllers/pets";
-import { reportPetSighting } from "./controllers/reports";
+import { reportPetSighting, sendEmailNotification } from "./controllers/reports";
 
 
 
@@ -226,9 +226,31 @@ app.patch("/pets/:id/found", verifyToken, async (req: AuthenticatedRequest, res:
 app.get("/pets", async (req, res) => {
   try {
     const { lat, lng } = req.query;
-    const pets = await getPetsNearby(parseFloat(lat as string), parseFloat(lng as string));
-    res.json(pets);
-  } catch (error) {
+    
+    // Validar parámetros de geolocalización
+    if (!lat || !lng) {
+      return res.status(400).json({ 
+        error: "Se requieren parámetros de ubicación: lat y lng" 
+      });
+    }
+    
+    const latitude = parseFloat(lat as string);
+    const longitude = parseFloat(lng as string);
+    
+    // Validar que las coordenadas sean números válidos
+    if (isNaN(latitude) || isNaN(longitude)) {
+      return res.status(400).json({ 
+        error: "Las coordenadas deben ser números válidos" 
+      });
+    }
+    
+    const pets = await getPetsNearby(latitude, longitude);
+    res.json({
+      message: `Se encontraron ${pets.length} mascotas perdidas cerca de la ubicación`,
+      pets: pets
+    });
+  } catch (error: any) {
+    console.error("Error obteniendo mascotas cercanas:", error.message);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
@@ -238,6 +260,7 @@ app.post("/reports", async (req, res) => {
   try {
     const { petId, reporterPhone, reporterName, description } = req.body;
     await reportPetSighting(petId, reporterPhone, reporterName, description);
+    await sendEmailNotification(petId, reporterPhone, reporterName, description);
     res.status(201).json({ message: "Reporte de avistamiento enviado exitosamente" });
   } catch (error) {
     res.status(500).json({ error: "Error interno del servidor" });

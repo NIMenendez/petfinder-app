@@ -1,4 +1,4 @@
-import { Pet } from "../models/models";
+import { Pet, User } from "../models/models";
 import { client } from "../lib/algolia"
 
 //Funcion auxiliar para formatear el body para Algolia
@@ -151,16 +151,84 @@ export async function updatePetData(
 }
 
 export async function getPetsNearby (lat: number, lng: number) {
-  
-  const algoliaRes = await client.searchSingleIndex({ 
-    indexName: 'dev_PETS',
-    searchParams: {     
-      aroundLatLng: `${lat}, ${lng}`,
-      aroundRadius: 10000,
+  try {
+    // Buscar mascotas cercanas en Algolia
+    const algoliaRes = await client.searchSingleIndex({ 
+      indexName: 'dev_PETS',
+      searchParams: {     
+        aroundLatLng: `${lat}, ${lng}`,
+        aroundRadius: 10000,
+      }
+    });
+
+    // Extraer los IDs de las mascotas encontradas en Algolia
+    const petIds = algoliaRes.hits.map((hit: any) => parseInt(hit.objectID));
+    
+    if (petIds.length === 0) {
+      return []; // No hay mascotas cercanas
     }
-  })
 
-  const results = algoliaRes.hits
+    // Buscar en la base de datos solo las mascotas que siguen perdidas
+    const lostPets = await Pet.findAll({
+      where: {
+        id: petIds,
+        status_lost: true
+      },
+      include: [
+        {
+          model: User,
+          attributes: ['name'] // Solo incluir el nombre del usuario
+        }
+      ]
+    });
 
-  return results;
+    // Mapear los resultados para incluir información útil
+    const results = lostPets.map(pet => ({
+      id: pet.get('id'),
+      name: pet.get('name'),
+      lat: pet.get('lat'),
+      lng: pet.get('lng'),
+      imageUrl: pet.get('imageUrl'),
+      status_lost: pet.get('status_lost'),
+      createdAt: pet.get('createdAt'),
+      owner: pet.get('user') ? pet.get('user') : null
+    }));
+
+    return results;
+    
+  } catch (error: any) {
+    console.error('Error en getPetsNearby:', error.message);
+    
+    // Fallback: si Algolia falla, buscar directamente en la BD
+    // (menos eficiente pero funcional)
+    try {
+      const fallbackPets = await Pet.findAll({
+        where: {
+          status_lost: true
+        },
+        include: [
+          {
+            model: User,
+            attributes: ['name']
+          }
+        ]
+      });
+      
+      console.warn('Usando fallback de base de datos (sin filtro geográfico)');
+      return fallbackPets.map(pet => ({
+        id: pet.get('id'),
+        name: pet.get('name'),
+        lat: pet.get('lat'),
+        lng: pet.get('lng'),
+        imageUrl: pet.get('imageUrl'),
+        status_lost: pet.get('status_lost'),
+        createdAt: pet.get('createdAt'),
+        owner: pet.get('user') ? pet.get('user') : null
+      }));
+      
+    } catch (dbError: any) {
+      console.error('Error en fallback de base de datos:', dbError.message);
+      throw new Error('Error al buscar mascotas perdidas');
+    }
+  }
 }
