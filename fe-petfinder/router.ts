@@ -6,6 +6,8 @@ import { initEditPassword } from "./pages/profile/modify-pw";
 import { initMyReports } from "./pages/profile/my-reports";
 import { initReportLostPet } from "./pages/profile/report-lost-pet";
 import { initEditReport } from "./pages/profile/edit-report";
+import { initSignup } from "./pages/profile/signup";
+import { initLogin } from "./pages/profile/login";
 
 type RouterPath = {
   pathRegex: RegExp;
@@ -22,6 +24,8 @@ const routes: RouterPath[] = [
   { pathRegex: /^\/my-reports$/, render: () => initMyReports({ goTo }) },
   { pathRegex: /^\/report-lost-pet$/, render: () => initReportLostPet({ goTo }) },
   { pathRegex: /^\/edit-report$/, render: () => initEditReport({ goTo }) },
+  { pathRegex: /^\/signup$/, render: () => initSignup({ goTo }) },
+  { pathRegex: /^\/login$/, render: () => initLogin({ goTo }) },
   { pathRegex: /.*/, render: () => {
       const notFound = document.createElement('div');
       notFound.innerHTML = '<h1>404 - Página no encontrada</h1>';

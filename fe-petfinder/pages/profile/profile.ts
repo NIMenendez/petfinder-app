@@ -32,15 +32,32 @@ export function initProfile(params: { goTo: (arg: string) => void }): HTMLElemen
       <button class="change-password-button">Modificar tu contraseña</button>
     </div>
     <div class="profile-footer">
-      <p class="user-email" data-email="soyunemail@test.com"></p>
-      <a class="logout-link" href="#">Cerrar sesión</a>
+      <p class="user-email" data-email=""></p>
+      <a class="loginout-link" href="#"></a>
     </div>
   </main>
 `
-  
 
-  const userEmailElement = profilePage.querySelector('.user-email') as HTMLElement;
-  const emailFromDataset = userEmailElement?.dataset.email;
+const userEmailElement = profilePage.querySelector('.user-email') as HTMLElement;
+
+userEmailElement.dataset.email = sessionStorage.getItem("userEmail") || "";
+
+const loginoutLink = profilePage.querySelector('.loginout-link') as HTMLAnchorElement;
+
+const emailFromDataset = userEmailElement?.dataset.email;
+
+if (emailFromDataset) {
+    loginoutLink.textContent = "Cerrar sesión";
+    loginoutLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      sessionStorage.removeItem("authToken")
+      sessionStorage.removeItem("userEmail");
+      window.location.href = "/home";
+    });
+  } else {
+    loginoutLink.textContent = "Iniciar sesión";
+    loginoutLink.href = "/login";
+  }
 
   if (emailFromDataset) {
     userEmailElement.textContent = emailFromDataset;
