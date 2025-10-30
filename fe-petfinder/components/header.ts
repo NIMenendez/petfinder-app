@@ -33,7 +33,7 @@ class Header extends HTMLElement {
    </style>
 
     <header class="main-header">
-      <a href="/home"><img src="/public/61788357c19ead6c7eecf06b3b1ac2dfd5631d44 (1).png" alt="Petfinder Logo" width="60" /></a>
+      <a href="/home"><img src="/61788357c19ead6c7eecf06b3b1ac2dfd5631d44 (1).png" alt="Petfinder Logo" width="60" /></a>
       <button class="menu-button"><svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-menu-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 6l16 0" /><path d="M4 12l16 0" /><path d="M4 18l16 0" /></svg></button>
     </header>
     <div class="menu-container">
