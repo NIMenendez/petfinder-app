@@ -2,8 +2,6 @@ import '../../style.css'
 import '../../components/header.ts'
 import '../../components/saved-popup.ts'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 
 export function initEditProfile(params: { goTo: (arg: string) => void }): HTMLElement {
   const editProfilePage = document.createElement("div");
@@ -117,7 +115,7 @@ export function initEditProfile(params: { goTo: (arg: string) => void }): HTMLEl
     }
     
     try {
-      const response = await fetch(`${API_BASE_URL}/users/userdata/${userId}`, {
+      const response = await fetch(`https://petfinder-app-tc1a.onrender.com/users/userdata/${userId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

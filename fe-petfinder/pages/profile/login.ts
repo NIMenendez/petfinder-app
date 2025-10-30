@@ -1,8 +1,6 @@
 import '../../style.css'
 import '../../components/header.ts'
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000';
-
 export function initLogin(params: { goTo: (arg: string) => void }): HTMLElement {
   const loginPage = document.createElement("div");
 
@@ -263,7 +261,7 @@ export function initLogin(params: { goTo: (arg: string) => void }): HTMLElement 
     submitButton.disabled = true;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/token`, {
+      const response = await fetch(`https://petfinder-app-tc1a.onrender.com/auth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

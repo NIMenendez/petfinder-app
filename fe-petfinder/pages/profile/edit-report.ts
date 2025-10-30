@@ -1,10 +1,8 @@
 import '../../style.css'
 import '../../components/header.ts'
 import Dropzone from 'dropzone';
-import { forwardGeocode } from '../../utils/geocoding';
-import { compressImage } from '../../utils/image-compressor';
-
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000';
+import { forwardGeocode } from '../../utils/geocoding.ts';
+import { compressImage } from '../../utils/image-compressor.ts';
 
 interface ExistingReport {
   id?: string;
@@ -407,7 +405,7 @@ export function initEditReport(params: {
     });
     
     try {
-      const response = await fetch(`${API_BASE_URL}/pets/${sessionStorage.getItem('selectedReportId')}`, {
+      const response = await fetch(`https://petfinder-app-tc1a.onrender.com/pets/${sessionStorage.getItem('selectedReportId')}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -442,7 +440,7 @@ export function initEditReport(params: {
       console.log("Mascota reportada como encontrada:", currentData);
       
       try {
-      const response = await fetch(`${API_BASE_URL}/pets/${sessionStorage.getItem('selectedReportId')}/found`, {
+      const response = await fetch(`https://petfinder-app-tc1a.onrender.com/pets/${sessionStorage.getItem('selectedReportId')}/found`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -472,7 +470,7 @@ export function initEditReport(params: {
       console.log("Reporte eliminado:", currentData);
       
       try {
-        const response = await fetch(`${API_BASE_URL}/pets/${sessionStorage.getItem('selectedReportId')}`, {
+        const response = await fetch(`https://petfinder-app-tc1a.onrender.com/pets/${sessionStorage.getItem('selectedReportId')}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',

@@ -1,10 +1,8 @@
 import '../../style.css'
 import '../../components/header.ts'
 import Dropzone from 'dropzone';
-import { forwardGeocode } from '../../utils/geocoding';
-import { compressImage } from '../../utils/image-compressor';
-
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000';
+import { forwardGeocode } from '../../utils/geocoding.ts';
+import { compressImage } from '../../utils/image-compressor.ts';
 
 
 
@@ -324,7 +322,7 @@ export function initReportLostPet(params: { goTo: (arg: string) => void }): HTML
     try {
       console.log("imageDataURL en el momento del envío:", imageDataURL ? `presente (${imageDataURL.length} caracteres)` : "NULL");
 
-      const response = await fetch(`${API_BASE_URL}/pets`, {
+      const response = await fetch(`https://petfinder-app-tc1a.onrender.com/pets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

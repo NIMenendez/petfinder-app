@@ -1,10 +1,7 @@
 import '../style.css'
 import '../components/header.ts'
 import '../components/cards.ts'
-import { reverseGeocode } from '../utils/geocoding'
-
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000';
-console.log('✅ API_BASE_URL cargada:', API_BASE_URL);
+import { reverseGeocode } from '../utils/geocoding.ts'
 
 
 interface PetData {
@@ -36,7 +33,7 @@ export async function initHomePets(params: { goTo: (arg: string) => void }): Pro
         return [];
       }
 
-      const url = `${API_BASE_URL}/pets?lat=${userLocation.latitude}&lng=${userLocation.longitude}`;
+      const url = `https://petfinder-app-tc1a.onrender.com/pets?lat=${userLocation.latitude}&lng=${userLocation.longitude}`;
       console.log('Fetching from:', url);
       
       const response = await fetch(url);

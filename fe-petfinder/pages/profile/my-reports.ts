@@ -2,8 +2,6 @@ import '../../components/header.ts';
 import '../../components/edit-card.ts';
 import '../../style.css';
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000';
-
 interface Report {
   id: string;
   name: string;
@@ -135,7 +133,7 @@ export function initMyReports(params: { goTo: (arg: string) => void }): HTMLElem
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/users/${userId}/pets`, {
+      const response = await fetch(`https://petfinder-app-tc1a.onrender.com/users/${userId}/pets`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
