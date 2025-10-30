@@ -9,7 +9,7 @@ Pet.init({
   status_lost: {type: DataTypes.BOOLEAN},
   lat: {type: DataTypes.FLOAT},
   lng: {type: DataTypes.FLOAT},
-  imageUrl: {type: DataTypes.STRING},
+  imageUrl: {type: DataTypes.TEXT},
   userId: {
     type: DataTypes.INTEGER,
     allowNull: false,

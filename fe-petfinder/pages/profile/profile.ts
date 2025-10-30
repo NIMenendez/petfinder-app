@@ -52,6 +52,7 @@ if (emailFromDataset) {
       e.preventDefault();
       sessionStorage.removeItem("authToken")
       sessionStorage.removeItem("userEmail");
+      sessionStorage.removeItem("userId");
       window.location.href = "/home";
     });
   } else {

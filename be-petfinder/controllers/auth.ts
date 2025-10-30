@@ -62,11 +62,13 @@ export async function authenticateUser(email: string, password: string) {
     if (!authUser) {
       throw new Error("Email o contraseña inválidos");
     }
+
+    const userId = authUser.get("id");
     
     // Generar token con información adicional y expiración
     const token = sign(
       { 
-        id: authUser.get("id"),
+        id: userId,
         email: authUser.get("email")
       }, 
       SECRET_KEY as string,
@@ -76,7 +78,7 @@ export async function authenticateUser(email: string, password: string) {
     );
     
     console.log("Token generado exitosamente");
-    return token;
+    return { token, userId };
     
   } catch (error) {
     console.error("Error en authenticateUser:", error);

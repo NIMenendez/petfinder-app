@@ -62,8 +62,10 @@ class Header extends HTMLElement {
     loginoutLink.textContent = "Cerrar sesión";
     loginoutLink.addEventListener("click", (e) => {
       e.preventDefault();
-      sessionStorage.removeItem("authToken")
+      sessionStorage.removeItem("authToken");
+      localStorage.removeItem("authToken");
       sessionStorage.removeItem("userEmail");
+      sessionStorage.removeItem("userId");
       window.location.href = "/home";
     });
   } else {

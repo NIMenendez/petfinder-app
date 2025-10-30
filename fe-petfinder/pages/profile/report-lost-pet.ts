@@ -1,6 +1,54 @@
 import '../../style.css'
 import '../../components/header.ts'
 import Dropzone from 'dropzone';
+import { forwardGeocode } from '../../utils/geocoding.ts';
+
+/**
+ * Comprime una imagen a un tamaño máximo especificado
+ */
+async function compressImage(file: File, maxWidth: number = 800, maxHeight: number = 800, quality: number = 0.7): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Calcular nuevas dimensiones manteniendo aspect ratio
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('No se pudo obtener contexto del canvas'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedDataURL = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataURL);
+      };
+      img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    reader.readAsDataURL(file);
+  });
+}
 
 
 export function initReportLostPet(params: { goTo: (arg: string) => void }): HTMLElement {
@@ -251,56 +299,101 @@ export function initReportLostPet(params: { goTo: (arg: string) => void }): HTML
   });
   
   // Manejar el botón de confirmación de imagen
-  confirmButton.addEventListener('click', () => {
+  confirmButton.addEventListener('click', async () => {
     if (myDropzone.files.length > 0) {
       const file = myDropzone.files[0];
       console.log("Imagen confirmada:", file);
       
-      // Convertir archivo a dataURL
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        imageDataURL = e.target?.result as string;
-        console.log("DataURL generado:", imageDataURL);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Comprimir imagen antes de convertir a DataURL
+        imageDataURL = await compressImage(file, 800, 800, 0.7);
+        console.log("Imagen comprimida. Tamaño:", imageDataURL.length, "caracteres");
+        confirmButton.disabled = true;
+        confirmButton.textContent = "✓ Imagen confirmada";
+      } catch (error) {
+        console.error("Error al comprimir imagen:", error);
+        alert("Error al procesar la imagen. Por favor, intenta nuevamente.");
+      }
     }
   });
 
   // Manejar el envío del formulario
   const form = reportLostPetPage.querySelector('.report-lost-pet-form') as HTMLFormElement;
-  form.addEventListener('submit', (event) => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
     
     // Obtener datos del formulario
     const petNameInput = reportLostPetPage.querySelector('#pet-name') as HTMLInputElement;
     const lastLocationInput = reportLostPetPage.querySelector('#last-seen-location') as HTMLInputElement;
+
+    const lastLocation = lastLocationInput.value;
+
+    const lastLocationCoords = await forwardGeocode(lastLocation);
     
-    const formData = {
-      petName: petNameInput.value,
-      lastLocation: lastLocationInput.value,
-      imageDataURL: imageDataURL // DataURL de la imagen
-    };
+    const lat = lastLocationCoords ? lastLocationCoords.lat : null;
+    const lng = lastLocationCoords ? lastLocationCoords.lng : null;
     
     // Validar que todos los campos estén completos
-    if (!formData.petName || !formData.lastLocation) {
+    if (!petNameInput.value.trim() || !lastLocation.trim()) {
       alert("Por favor, completa todos los campos del formulario.");
       return;
     }
     
-    if (!formData.imageDataURL) {
+    // Si no hay imagen confirmada, intentar comprimir la del Dropzone
+    if (!imageDataURL && myDropzone.files.length > 0) {
+      try {
+        console.log("Comprimiendo imagen...");
+        imageDataURL = await compressImage(myDropzone.files[0], 800, 800, 0.7);
+        console.log("Imagen comprimida automáticamente. Tamaño:", imageDataURL.length, "caracteres");
+      } catch (error) {
+        console.error("Error al comprimir imagen:", error);
+        alert("Error al procesar la imagen. Por favor, haz clic en 'Confirmar imagen' y vuelve a intentar.");
+        return;
+      }
+    }
+    
+    if (!imageDataURL) {
       alert("Por favor, selecciona y confirma una imagen de la mascota.");
       return;
     }
     
-    console.log("Datos del formulario:", formData);
-    console.log("Formulario enviado con imagen DataURL");
-    
-    // Aquí puedes agregar la lógica para enviar los datos al servidor
-    // Por ejemplo: fetch('/api/report-pet', { method: 'POST', body: JSON.stringify(formData) })
-    
-    alert("¡Reporte enviado exitosamente!");
-  });
+    console.log("Enviando datos:", {
+      name: petNameInput.value,
+      lat: lat,
+      lng: lng,
+      imageURLLength: imageDataURL ? imageDataURL.length : "NULL"
+    });
 
+    try {
+      console.log("imageDataURL en el momento del envío:", imageDataURL ? `presente (${imageDataURL.length} caracteres)` : "NULL");
+      
+      const response = await fetch(`http://localhost:3000/pets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem("authToken") || ""}`
+        },
+        body: JSON.stringify({
+          name: petNameInput.value.trim(),
+          lat: lat,
+          lng: lng,
+          imageURL: imageDataURL
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert("¡Reporte enviado exitosamente!");
+        params.goTo('/home/pets');
+      } else {
+        alert(data.error || "Error al enviar el reporte. Por favor, intenta nuevamente.");
+      }
+    } catch(error){
+      console.error("Error al enviar el formulario:", error);
+      alert("Ocurrió un error al enviar el reporte. Por favor, intenta nuevamente.");
+    }
+  });
   // Manejar el botón cancelar
   const cancelButton = reportLostPetPage.querySelector('.cancel-button') as HTMLButtonElement;
   cancelButton.addEventListener('click', () => {

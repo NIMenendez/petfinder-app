@@ -17,17 +17,23 @@ const PORT = process.env.PORT || 3000;
   });
 })();
 
-app.use(express.json())
+// Configurar CORS primero, antes que otros middleware
 const corsOptions = {
   origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  credentials: true
 }
 app.use(cors(corsOptions))
+
+// Luego configurar express.json con límite aumentado para imágenes
+app.use(express.json({ limit: '50mb' }))
+app.use(express.urlencoded({ limit: '50mb' }))
 
 //Registro de usuario (Sign up)(nuevo usuario y auth)
 app.post("/auth", async (req, res) => {
   const { email, password, name } = req.body
 
-  const { user, created, authUser, authCreated } = await createAuthUser(email, password, name)
+  const { user, created, authCreated } = await createAuthUser(email, password, name)
 
   if (created && authCreated) {
     res.status(201).json({ message: "Usuario creado exitosamente", userId: user.get("id") })
@@ -42,8 +48,8 @@ app.post("/auth/token", async (req, res) => {
   const { email, password } = req.body
   
   await authenticateUser(email, password)
-    .then((token) => {
-      res.status(200).json({ token: token })
+    .then(({ token, userId }) => {
+      res.status(200).json({ token: token, userId: userId })
     })
     .catch((error) => {
       res.status(401).json({ error: error.message })
@@ -112,8 +118,10 @@ app.patch("/users/password/:id", verifyTokenAndOwnership, async (req: Authentica
 //Crear mascota perdida
 app.post("/pets", verifyToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { name, lat, lng, imageUrl } = req.body;
+    const { name, lat, lng, imageURL } = req.body;
     const userId = req.user?.id;
+    
+    console.log("POST /pets recibido con:", { name, lat, lng, imageURL: imageURL ? "presente" : "NULL", userId });
     
     // Validar que todos los campos requeridos estén presentes
     if (!name || !lat || !lng || !userId) {
@@ -121,9 +129,15 @@ app.post("/pets", verifyToken, async (req: AuthenticatedRequest, res: Response) 
         error: "Faltan campos requeridos: name, lat, lng son obligatorios" 
       });
     }
-    
-    const result = await createLostPet(userId, name, lat, lng, imageUrl);
-    res.status(201).json({ 
+
+    if (!imageURL) {
+      return res.status(400).json({ 
+        error: "La imagen es requerida" 
+      });
+    }
+
+    const result = await createLostPet(userId, name, lat, lng, imageURL);
+    res.status(201).json({
       message: "Mascota perdida reportada exitosamente",
       petId: result.get("id")
     });
@@ -138,7 +152,7 @@ app.patch("/pets/:id", verifyToken, async (req: AuthenticatedRequest, res: Respo
   try {
     const petId = req.params.id;
     const userId = req.user?.id;
-    const { name, lat, lng, imageUrl } = req.body;
+    const { name, lat, lng, imageURL } = req.body;
 
     if (!userId) {
       return res.status(401).json({ error: "Usuario no autenticado" });
@@ -149,12 +163,12 @@ app.patch("/pets/:id", verifyToken, async (req: AuthenticatedRequest, res: Respo
     if (name !== undefined) updates.name = name;
     if (lat !== undefined) updates.lat = lat;
     if (lng !== undefined) updates.lng = lng;
-    if (imageUrl !== undefined) updates.imageUrl = imageUrl;
+    if (imageURL !== undefined) updates.imageUrl = imageURL;
 
     // Verificar que al menos un campo fue proporcionado
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ 
-        error: "Se debe proporcionar al menos un campo para actualizar (name, lat, lng, imageUrl)" 
+        error: "Se debe proporcionar al menos un campo para actualizar (name, lat, lng, imageURL)" 
       });
     }
 

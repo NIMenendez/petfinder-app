@@ -277,12 +277,13 @@ export function initLogin(params: { goTo: (arg: string) => void }): HTMLElement 
       if (response.ok) {
         // Login exitoso - guardar token
         sessionStorage.setItem('authToken', data.token);
+        sessionStorage.setItem('userId', data.userId);
         sessionStorage.setItem('userEmail', emailInput.value.trim());
         // Opcional: mostrar mensaje de éxito
         alert('¡Inicio de sesión exitoso!');
         
         // Redirigir a la página principal o perfil
-        params.goTo('/profile');
+        params.goTo('/home/pets');
       } else {
         // Error del servidor
         if (response.status === 401) {

@@ -102,16 +102,49 @@ export function initEditPassword(params: { goTo: (arg: string) => void }): HTMLE
 `
 
   const form = editPasswordPage.querySelector("form");
-  
-  form?.addEventListener("submit", (event) => {
+
+  form?.addEventListener("submit", async (event) => {
     event.preventDefault();
     
-    const formDataAPI = new FormData(event.target as HTMLFormElement);
-    console.log("Usando FormData API:");
-    for (let [key, value] of formDataAPI.entries()) {
-      console.log(`${key}: ${value}`);
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    const userId = sessionStorage.getItem("userId");
+
+    if (!userId) {
+      alert('No se encontró el ID de usuario. Por favor, inicia sesión nuevamente.');
+      return;
     }
-    showSavedPopup();
+    
+    try {
+      const response = await fetch(`http://localhost:3000/users/password/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem("authToken") || ""}`
+        },
+        body: JSON.stringify({
+          oldPassword: data['current-password'],
+          newPassword: data['new-password'],
+        }),
+      });
+
+      const resdata = await response.json();
+
+      if (response.ok) {
+        showSavedPopup();
+      } else {
+        // Error del servidor
+        if (response.status === 403) {
+          alert(resdata.error || 'No tienes permiso para realizar esta acción.');
+        } else {
+          alert(resdata.error || 'Error al guardar los cambios. Intenta nuevamente.');
+        }
+      }
+    } catch (error) {
+      console.error('Error en actualizar los datos:', error);
+      alert('Error de conexión. Verifica tu internet e intenta nuevamente.');
+    }
   });
 
   function showSavedPopup() {
