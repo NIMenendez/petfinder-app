@@ -11,7 +11,7 @@ import { initLogin } from "./pages/profile/login";
 
 type RouterPath = {
   pathRegex: RegExp;
-  render: (params: { goTo: (path: string) => void }) => HTMLElement;
+  render: (params: { goTo: (path: string) => void }) => HTMLElement | Promise<HTMLElement>;
 };
 
 // Definición de rutas
@@ -42,7 +42,7 @@ function goTo(path: string) {
 }
 
 // Función para renderizar según la ruta
-function renderPath(path: string): void {
+async function renderPath(path: string): Promise<void> {
   // Quitar trailing slash
   const adjustedPath = path.replace(/\/$/, "") || "/";
 
@@ -52,7 +52,8 @@ function renderPath(path: string): void {
     const app = document.getElementById("app");
     if (app) {
       app.innerHTML = "";
-      app.appendChild(route.render({ goTo }));
+      const element = await route.render({ goTo });
+      app.appendChild(element);
     }
   } else {
     console.warn(`El path '${adjustedPath}' no fue encontrado.`);

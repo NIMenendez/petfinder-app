@@ -2,53 +2,8 @@ import '../../style.css'
 import '../../components/header.ts'
 import Dropzone from 'dropzone';
 import { forwardGeocode } from '../../utils/geocoding.ts';
+import { compressImage } from '../../utils/image-compressor.ts';
 
-/**
- * Comprime una imagen a un tamaño máximo especificado
- */
-async function compressImage(file: File, maxWidth: number = 800, maxHeight: number = 800, quality: number = 0.7): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = new Image();
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-
-        // Calcular nuevas dimensiones manteniendo aspect ratio
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('No se pudo obtener contexto del canvas'));
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-        const compressedDataURL = canvas.toDataURL('image/jpeg', quality);
-        resolve(compressedDataURL);
-      };
-      img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
-    reader.readAsDataURL(file);
-  });
-}
 
 
 export function initReportLostPet(params: { goTo: (arg: string) => void }): HTMLElement {
@@ -366,7 +321,7 @@ export function initReportLostPet(params: { goTo: (arg: string) => void }): HTML
 
     try {
       console.log("imageDataURL en el momento del envío:", imageDataURL ? `presente (${imageDataURL.length} caracteres)` : "NULL");
-      
+
       const response = await fetch(`http://localhost:3000/pets`, {
         method: 'POST',
         headers: {
@@ -385,7 +340,7 @@ export function initReportLostPet(params: { goTo: (arg: string) => void }): HTML
       
       if (response.ok) {
         alert("¡Reporte enviado exitosamente!");
-        params.goTo('/home/pets');
+        params.goTo('/my-reports');
       } else {
         alert(data.error || "Error al enviar el reporte. Por favor, intenta nuevamente.");
       }
@@ -397,9 +352,8 @@ export function initReportLostPet(params: { goTo: (arg: string) => void }): HTML
   // Manejar el botón cancelar
   const cancelButton = reportLostPetPage.querySelector('.cancel-button') as HTMLButtonElement;
   cancelButton.addEventListener('click', () => {
-    params.goTo('/profile');
+    params.goTo('/my-reports');
   });
 
   return reportLostPetPage;
-
 }

@@ -1,17 +1,18 @@
 import '../style.css'
 import '../components/header.ts'
 import '../components/cards.ts'
+import { reverseGeocode } from '../utils/geocoding.ts'
 
 
 interface PetData {
   id: string;
   name: string;
-  lastLocation: string;
-  imageDataURL?: string;
-  coordinates?: {
-    latitude: number;
-    longitude: number;
-  };
+  lat: number;
+  lng: number;
+  imageUrl?: string;
+  status_lost: boolean;
+  createdAt: string;
+  owner?: any;
 }
 
 interface UserLocation {
@@ -20,61 +21,20 @@ interface UserLocation {
   timestamp: number;
 }
 
-export function initHomePets(params: { goTo: (arg: string) => void }): HTMLElement {
+export async function initHomePets(params: { goTo: (arg: string) => void }): Promise<HTMLElement> {
   const homePagePets = document.createElement("div");
   
   // Función para obtener mascotas perdidas cerca de la ubicación
-  const getPetsNearLocation = (userLocation?: UserLocation): PetData[] => {
-    // Datos de prueba hardcodeados para Santo Tomé, Santa Fe, Argentina
-    // Coordenadas aproximadas: -31.6633, -60.7633
-    const testPets: PetData[] = [
-      {
-        id: "pet-1",
-        name: "Max",
-        lastLocation: "Santo Tomé, Santa Fe",
-        imageDataURL: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx4f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bbjbqvkdjocVZzmtX2nQXz/W4xCsAe+cuvG9W/8AdMXEgP8Asq+8wgA0tVDtOD4YpBL6rM9gQUzzrrzWQWUd9Vh1gJp2vSjOvl5KbWHJKjtOlGWZFjG/e+gcpL4BN7S9XXEczF+5m4p7wPa/hP8AGcNi2rU1UHv9bjBKwFrB6lWFqpBZwu0LrOOtnWQ1HavdKODu4aq6w4ZdrKbKRjhfT7OJVdMzQdbjGNjnA=",
-        coordinates: { latitude: -31.6633, longitude: -60.7633 }
-      },
-      {
-        id: "pet-2", 
-        name: "Luna",
-        lastLocation: "Centro, Santo Tomé",
-        imageDataURL: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gODAK/9sAQwAGBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAsICMmJykqKRkfLTAtKDAlKCko/9sAQwEHBwcKCAoTCgoTKBoWGigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo/8AAEQgAAQABAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/aAAwDAQACEQMRAD8A5qikFPIpgNqOq4D/2Q==",
-        coordinates: { latitude: -31.6643, longitude: -60.7643 }
-      },
-      {
-        id: "pet-3",
-        name: "Rocky",
-        lastLocation: "Barrio Norte, Santo Tomé",
-        coordinates: { latitude: -31.6623, longitude: -60.7623 }
-      },
-      {
-        id: "pet-4",
-        name: "Bella",
-        lastLocation: "Av. San Martín, Santo Tomé",
-        imageDataURL: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx4f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bbjbqvkdjocVZzmtX2nQXz/W4xCsAe+cuvG9W/8AdMXEgP8Asq+8wgA0tVDtOD4YpBL6rM9gQUzzrrzWQWUd9Vh1gJp2vSjOvl5KbWHJKjtOlGWZFjG/e+gcpL4BN7S9XXEczF+5m4p7wPa/hP8AGcNi2rU1UHv9bjBKwFrB6lWFqpBZwu0LrOOtnWQ1HavdKODu4aq6w4ZdrKbKRjhfT7OJVdMzQdbjGNjnA=",
-        coordinates: { latitude: -31.6613, longitude: -60.7613 }
-      },
-      {
-        id: "pet-5",
-        name: "Toby",
-        lastLocation: "Plaza Central, Santo Tomé",
-        coordinates: { latitude: -31.6653, longitude: -60.7653 }
-      }
-    ];
-
-    // TODO: En el futuro, aquí se implementará la lógica para:
-    // 1. Hacer petición a la API con las coordenadas del usuario
-    // 2. Filtrar mascotas por proximidad geográfica
-    // 3. Ordenar por distancia más cercana
+  const getPetsNearLocation = async (userLocation?: UserLocation): Promise<PetData[]> => {
     
-    if (userLocation) {
-      console.log(`Buscando mascotas cerca de: ${userLocation.latitude}, ${userLocation.longitude}`);
-      // Por ahora retornamos las mascotas de prueba para cualquier ubicación
-      return testPets;
-    } else {
-      console.log("Usando ubicación por defecto: Santo Tomé, Santa Fe");
-      return testPets;
+    try {
+      const response = await fetch(`http://localhost:3000/pets?lat=${userLocation?.latitude}&lng=${userLocation?.longitude}`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const data = await response.json();
+      return data.pets || [];
+    } catch (error) {
+      console.error('Error fetching pets:', error);
+      return [];
     }
   };
 
@@ -98,12 +58,32 @@ export function initHomePets(params: { goTo: (arg: string) => void }): HTMLEleme
     return null;
   };
 
-  const userLocation = getUserLocation();
-  const nearbyPets = getPetsNearLocation(userLocation || undefined);
+  const userLocationCoords = getUserLocation();
+  let nearbyPets: PetData[] = [];
+  let userLocation: string | null = null;
+  
+  // Obtener mascotas cercanas
+  try {
+    nearbyPets = await getPetsNearLocation(userLocationCoords || undefined);
+    console.log("Mascotas obtenidas del servidor:", nearbyPets);
+  } catch (error) {
+    console.error('Error getting nearby pets:', error);
+    nearbyPets = [];
+  }
+  
+  // Obtener nombre de ubicación
+  if (userLocationCoords) {
+    try {
+      userLocation = await reverseGeocode(userLocationCoords.latitude, userLocationCoords.longitude);
+    } catch (error) {
+      console.error('Error getting location name:', error);
+      userLocation = null;
+    }
+  }
   
   // Determinar el título basado en si tenemos ubicación del usuario
   const locationTitle = userLocation 
-    ? "Mascotas perdidas cerca de tu ubicación" 
+    ? `Mascotas perdidas cerca de ${userLocation}`
     : "Mascotas perdidas cerca";
 
   homePagePets.innerHTML = `
@@ -127,9 +107,11 @@ export function initHomePets(params: { goTo: (arg: string) => void }): HTMLEleme
     <div class="pet-cards-container">
       ${nearbyPets.map(pet => `
         <pet-card 
+          id="${pet.id}"
           data-name="${pet.name}" 
-          data-lastlocation="${pet.lastLocation}"
-          ${pet.imageDataURL ? `data-image="${pet.imageDataURL}"` : ''}
+          data-lat="${pet.lat}"
+          data-lng="${pet.lng}"
+          ${pet.imageUrl ? `data-imageurl="${pet.imageUrl}"` : ''}
         ></pet-card>
       `).join('')}
     </div>

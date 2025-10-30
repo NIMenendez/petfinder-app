@@ -136,10 +136,36 @@ class ReportForm extends HTMLElement {
       e.stopPropagation();
     });
     
-    form?.addEventListener('submit', (e) => {
+    form?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      // Aquí puedes manejar el envío del formulario
-      console.log('Formulario enviado para:', petName);
+
+      const formData = new FormData(form);
+      const reportData = {
+        petId: sessionStorage.getItem('reporting-pet-id'),
+        reporterName: formData.get('reporter-name'),
+        reporterPhone: formData.get('reporter-contact'),
+        reportLocation: formData.get('report-location'),
+      };
+
+      const response = await fetch(`http://localhost:3000/reports`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+          body: JSON.stringify({
+            petId: reportData.petId,
+            reporterName: reportData.reporterName,
+            reporterPhone: reportData.reporterPhone,
+            description: reportData.reportLocation
+          })
+      })
+
+      if (!response.ok) {
+        alert('Error al enviar el reporte. Intenta nuevamente.');
+        return;
+      }
+
+      alert('Formulario enviado para: ' + petName);
       this.remove();
     });
   }

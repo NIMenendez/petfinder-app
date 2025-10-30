@@ -1,6 +1,8 @@
 import '../../style.css'
 import '../../components/header.ts'
 import Dropzone from 'dropzone';
+import { forwardGeocode } from '../../utils/geocoding.ts';
+import { compressImage } from '../../utils/image-compressor.ts';
 
 
 interface ExistingReport {
@@ -54,6 +56,7 @@ export function initEditReport(params: {
       max-width: 600px;
       margin: 0 auto;
       padding: 20px;
+      font-size: 1rem;
     }
     input {
       color: black;
@@ -67,13 +70,13 @@ export function initEditReport(params: {
       font-size: 1rem;
       margin-bottom: 16px;
     }
-    .report-lost-pet-main label {
+    .edit-report-main label {
       display: block;
       margin-bottom: 8px;
       text-align: left;
       font-weight: bold;
-      font-size: 1.2rem;
-      color: black;
+      font-size: 1.3rem;
+      color: black
     }
     .report-button {
       display: inline-block;
@@ -338,49 +341,91 @@ export function initEditReport(params: {
   });
   
   // Manejar el botón de confirmación de imagen
-  confirmButton.addEventListener('click', () => {
+  confirmButton.addEventListener('click', async () => {
     if (myDropzone.files.length > 0) {
       const file = myDropzone.files[0];
       console.log("Imagen confirmada:", file);
-      
-      // Convertir archivo a dataURL
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        imageDataURL = e.target?.result as string;
-        console.log("DataURL generado:", imageDataURL);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Comprimir imagen antes de convertir a DataURL
+        const compressedDataURL = await compressImage(file, 800, 800, 0.7);
+        imageDataURL = compressedDataURL;
+        console.log("Imagen comprimida. Tamaño:", imageDataURL.length, "caracteres");
+        confirmButton.disabled = true;
+        confirmButton.textContent = "✓ Imagen confirmada";
+        console.log("imageDataURL actualizado exitosamente");
+      } catch (error) {
+        console.error("Error al comprimir imagen:", error);
+        alert("Error al procesar la imagen. Por favor, intenta nuevamente.");
+      }
     }
   });
 
   // Manejar el envío del formulario
   const form = editReportPage.querySelector('.edit-report-form') as HTMLFormElement;
-  form.addEventListener('submit', (event) => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
     
     // Obtener datos del formulario
     const petNameInput = editReportPage.querySelector('#pet-name') as HTMLInputElement;
     const lastLocationInput = editReportPage.querySelector('#last-seen-location') as HTMLInputElement;
 
-    const formData = {
-      id: currentData.id, // ID del reporte para identificarlo en la actualización
-      petName: petNameInput.value || currentData.petName, // Usar valor actual si no se cambió
-      lastLocation: lastLocationInput.value || currentData.lastLocation, // Usar valor actual si no se cambió
-      imageDataURL: imageDataURL || currentData.imageDataURL // Usar imagen actual si no se cambió
-    };
+    // Solo incluir campos que fueron modificados
+    const updates: any = {};
     
-    console.log("Datos actualizados del reporte:", formData);
+    // Solo actualizar nombre si el input tiene valor (evitar eliminar si está vacío)
+    if (petNameInput.value.trim()) {
+      updates.name = petNameInput.value.trim();
+    }
     
-    // Aquí puedes agregar la lógica para enviar los datos actualizados al servidor
-    // Por ejemplo: 
-    // fetch(`/api/reports/${formData.id}`, { 
-    //   method: 'PUT', 
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(formData) 
-    // })
+    // Solo actualizar ubicación si el input tiene valor
+    if (lastLocationInput.value.trim()) {
+      const lastLocationCoords = await forwardGeocode(lastLocationInput.value.trim());
+      if (lastLocationCoords) {
+        updates.lat = lastLocationCoords.lat;
+        updates.lng = lastLocationCoords.lng;
+      }
+    }
     
-    alert("¡Reporte actualizado exitosamente!");
-    params.goTo('/my-reports'); // Regresar a la lista de reportes
+    // Solo actualizar imagen si se cargó una nueva
+    if (imageDataURL) {
+      console.log('Agregando imageUrl al update, tamaño:', imageDataURL.length);
+      updates.imageUrl = imageDataURL;
+    } else {
+      console.log('No hay imageDataURL definido, no se actualizará la imagen');
+    }
+
+    // Validar que al menos algo fue modificado
+    if (Object.keys(updates).length === 0) {
+      alert('Por favor, realiza al menos un cambio en el formulario.');
+      return;
+    }
+
+    console.log("Datos a actualizar:", {
+      ...updates,
+      imageUrl: updates.imageUrl ? `(presente, ${updates.imageUrl.length} caracteres)` : 'no incluido'
+    });
+    
+    try {
+      const response = await fetch(`http://localhost:3000/pets/${sessionStorage.getItem('selectedReportId')}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify(updates)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      alert('¡Reporte actualizado exitosamente!');
+      params.goTo('/my-reports');
+    } catch (error) {
+      console.error('Error updating report:', error);
+      alert('Hubo un error al actualizar el reporte. Por favor, intenta nuevamente.');
+      return;
+    }
   });
 
   // Manejar el botón cancelar
@@ -391,17 +436,28 @@ export function initEditReport(params: {
 
   // Manejar el botón "Reportar como encontrado"
   const foundButton = editReportPage.querySelector('.report-found-button') as HTMLButtonElement;
-  foundButton.addEventListener('click', () => {
+  foundButton.addEventListener('click', async () => {
     if (confirm('¿Estás seguro de que quieres marcar esta mascota como encontrada?')) {
       console.log("Mascota reportada como encontrada:", currentData);
       
-      // Aquí puedes agregar la lógica para marcar como encontrada en el servidor
-      // Por ejemplo:
-      // fetch(`/api/reports/${currentData.id}/found`, { 
-      //   method: 'PATCH',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ status: 'found' })
-      // })
+      try {
+      const response = await fetch(`http://localhost:3000/pets/${sessionStorage.getItem('selectedReportId')}/found`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+    } catch (error) {
+      console.error('Error updating report:', error);
+      alert('Hubo un error al actualizar el reporte. Por favor, intenta nuevamente.');
+      return;
+    }
       
       alert("¡Excelente! Tu mascota ha sido marcada como encontrada.");
       params.goTo('/my-reports');
@@ -410,18 +466,29 @@ export function initEditReport(params: {
 
   // Manejar el botón "Eliminar reporte"
   const deleteButton = editReportPage.querySelector('.delete-button') as HTMLButtonElement;
-  deleteButton.addEventListener('click', () => {
+  deleteButton.addEventListener('click', async () => {
     if (confirm('¿Estás seguro de que quieres eliminar este reporte? Esta acción no se puede deshacer.')) {
       console.log("Reporte eliminado:", currentData);
       
-      // Aquí puedes agregar la lógica para eliminar el reporte del servidor
-      // Por ejemplo:
-      // fetch(`/api/reports/${currentData.id}`, { 
-      //   method: 'DELETE'
-      // })
-      
-      alert("El reporte ha sido eliminado exitosamente.");
-      params.goTo('/my-reports');
+      try {
+        const response = await fetch(`http://localhost:3000/pets/${sessionStorage.getItem('selectedReportId')}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+
+        alert("El reporte ha sido eliminado exitosamente.");
+        params.goTo('/my-reports');
+      } catch (error) {
+        console.error('Error eliminando reporte:', error);
+        alert('Hubo un error al eliminar el reporte. Por favor, intenta nuevamente.');
+      }
     }
   });
 
