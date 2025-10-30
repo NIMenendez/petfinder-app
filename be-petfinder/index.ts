@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from "express"
 import cors from "cors"
 import { createAuthUser, authenticateUser, verifyToken, verifyTokenAndOwnership, AuthenticatedRequest, checkUserOwnership } from "./controllers/auth";
 import { getUserById, getUserPets, updateUserPassword, updateUserName } from "./controllers/users";
-import { createLostPet, updatePetStatusToFound, updatePetData, getPetsNearby, verifyPetOwnership } from "./controllers/pets";
+import { createLostPet, deleteLostPet, updatePetStatusToFound, updatePetData, getPetsNearby, verifyPetOwnership } from "./controllers/pets";
 import { reportPetSighting, sendEmailNotification } from "./controllers/reports";
 
 
@@ -152,7 +152,12 @@ app.patch("/pets/:id", verifyToken, async (req: AuthenticatedRequest, res: Respo
   try {
     const petId = req.params.id;
     const userId = req.user?.id;
-    const { name, lat, lng, imageURL } = req.body;
+    const { name, lat, lng, imageUrl } = req.body;
+
+    console.log("=== PATCH /pets/:id ===");
+    console.log("petId:", petId);
+    console.log("userId:", userId);
+    console.log("Datos recibidos:", { name, lat, lng, imageUrl: imageUrl ? `(presente, ${imageUrl.substring(0, 50)}...)` : 'vacío' });
 
     if (!userId) {
       return res.status(401).json({ error: "Usuario no autenticado" });
@@ -163,24 +168,30 @@ app.patch("/pets/:id", verifyToken, async (req: AuthenticatedRequest, res: Respo
     if (name !== undefined) updates.name = name;
     if (lat !== undefined) updates.lat = lat;
     if (lng !== undefined) updates.lng = lng;
-    if (imageURL !== undefined) updates.imageUrl = imageURL;
+    if (imageUrl !== undefined) updates.imageUrl = imageUrl;
+
+    console.log("Updates a aplicar:", { ...updates, imageUrl: updates.imageUrl ? `(presente, ${updates.imageUrl.substring(0, 50)}...)` : 'vacío' });
 
     // Verificar que al menos un campo fue proporcionado
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ 
-        error: "Se debe proporcionar al menos un campo para actualizar (name, lat, lng, imageURL)" 
+        error: "Se debe proporcionar al menos un campo para actualizar (name, lat, lng, imageUrl)" 
       });
     }
 
     await updatePetData(parseInt(petId), userId, updates);
     
     const updatedFields = Object.keys(updates).join(', ');
+    console.log("✓ Mascota actualizada correctamente. Campos:", updatedFields);
+    console.log("=== FIN PATCH /pets/:id ===");
+    
     res.json({ 
       message: "Datos de la mascota actualizados exitosamente",
       updatedFields: updatedFields
     });
     
   } catch (error: any) {
+    console.error("❌ Error en PATCH /pets/:id:", error.message);
     if (error.message === "Mascota no encontrada") {
       return res.status(404).json({ error: "Mascota no encontrada" });
     }
@@ -265,6 +276,26 @@ app.get("/pets", async (req, res) => {
     });
   } catch (error: any) {
     console.error("Error obteniendo mascotas cercanas:", error.message);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+//Eliminar un reporte de mascota perdida
+app.delete("/pets/:id", verifyToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const petId = req.params.id;
+    const userId = req.user?.id;
+
+    // Verificar que la mascota pertenece al usuario
+    const isOwner = await verifyPetOwnership(parseInt(petId), userId);
+    if (!isOwner) {
+      return res.status(403).json({ error: "No tienes permisos para modificar esta mascota" });
+    }
+
+    await deleteLostPet(parseInt(petId));
+    res.json({ message: "Reporte de mascota perdida eliminado exitosamente" });
+  } catch (error: any) {
+    console.error("Error eliminando reporte de mascota perdida:", error.message);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });

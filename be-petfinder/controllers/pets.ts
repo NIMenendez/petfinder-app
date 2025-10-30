@@ -70,6 +70,13 @@ export async function createLostPet(userId: number, name: string, lat: number, l
   }
 }
 
+export async function deleteLostPet(petId: number) {
+  const pet = await Pet.findByPk(petId);
+  if (pet) {
+    await pet.destroy();
+  }
+}
+
 export async function updatePetStatusToFound(petId: number, status_lost: true | false) {
   const pet = await Pet.findByPk(petId);
   if (pet) {
@@ -157,7 +164,7 @@ export async function getPetsNearby (lat: number, lng: number) {
       indexName: 'dev_PETS',
       searchParams: {     
         aroundLatLng: `${lat}, ${lng}`,
-        aroundRadius: 10000,
+        aroundRadius: 1500000,
       }
     });
 
