@@ -1,6 +1,8 @@
 import '../../style.css'
 import '../../components/header.ts'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export function initLogin(params: { goTo: (arg: string) => void }): HTMLElement {
   const loginPage = document.createElement("div");
 
@@ -261,7 +263,7 @@ export function initLogin(params: { goTo: (arg: string) => void }): HTMLElement 
     submitButton.disabled = true;
 
     try {
-      const response = await fetch('http://localhost:3000/auth/token', {
+      const response = await fetch(`${API_BASE_URL}/auth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

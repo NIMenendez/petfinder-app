@@ -1,25 +1,6 @@
 import { Pet, User } from "../models/models";
 import { client } from "../lib/algolia"
 
-//Funcion auxiliar para formatear el body para Algolia
-function bodyToIndex(body:any){
-  const res : any = {};
-
-  if(body.nombre){
-    res.nombre = body.nombre
-  }
-  if(body.rubro){
-    res.rubro = body.rubro
-  }
-  if(body.lat && body.lng){
-    res._geoloc = {
-      lat: body.lat,
-      lng: body.lng
-    }
-  }  
-  return res
-}
-
 export async function createLostPet(userId: number, name: string, lat: number, lng: number, imageUrl: string) {
   try {
     console.log("=== INICIO createLostPet ===");
@@ -36,7 +17,7 @@ export async function createLostPet(userId: number, name: string, lat: number, l
     
     try {
       const algoliaRes = await client.saveObjects({
-        indexName: 'dev_PETS',
+        indexName: 'prod_PETS',
         objects: [
           {
             objectID: lostPet.get("id"),
@@ -51,7 +32,6 @@ export async function createLostPet(userId: number, name: string, lat: number, l
       console.log("Algolia guardado exitosamente:", algoliaRes);
     } catch (algoliaError: any) {
       console.warn("Error en Algolia (continuando sin índice):", algoliaError.message);
-      // No lanzamos el error, continuamos sin Algolia
     }
 
   console.log("ID de la mascota perdida:", lostPet.get("id"));
@@ -146,7 +126,7 @@ export async function updatePetData(
     // Solo hacer la petición a Algolia si hay algo que actualizar
     if (Object.keys(algoliaUpdates).length > 1) { // objectID siempre está presente
       const algoliaRes = await client.partialUpdateObjects({
-        indexName: 'dev_PETS',
+        indexName: 'prod_PETS',
         objects: [algoliaUpdates]
       });
     }
@@ -161,7 +141,7 @@ export async function getPetsNearby (lat: number, lng: number) {
   try {
     // Buscar mascotas cercanas en Algolia
     const algoliaRes = await client.searchSingleIndex({ 
-      indexName: 'dev_PETS',
+      indexName: 'prod_PETS',
       searchParams: {     
         aroundLatLng: `${lat}, ${lng}`,
         aroundRadius: 1500000,

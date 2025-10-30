@@ -2,6 +2,8 @@ import '../../components/header.ts';
 import '../../components/edit-card.ts';
 import '../../style.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 interface Report {
   id: string;
   name: string;
@@ -133,7 +135,7 @@ export function initMyReports(params: { goTo: (arg: string) => void }): HTMLElem
         return;
       }
 
-      const response = await fetch(`http://localhost:3000/users/${userId}/pets`, {
+      const response = await fetch(`${API_BASE_URL}/users/${userId}/pets`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

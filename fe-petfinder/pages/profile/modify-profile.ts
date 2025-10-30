@@ -1,6 +1,7 @@
 import '../../style.css'
 import '../../components/header.ts'
 import '../../components/saved-popup.ts'
+import { API_BASE_URL } from '../../utils/api-url.ts'
 
 
 export function initEditProfile(params: { goTo: (arg: string) => void }): HTMLElement {
@@ -115,7 +116,7 @@ export function initEditProfile(params: { goTo: (arg: string) => void }): HTMLEl
     }
     
     try {
-      const response = await fetch(`http://localhost:3000/users/userdata/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/users/userdata/${userId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

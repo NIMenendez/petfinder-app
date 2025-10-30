@@ -3,6 +3,9 @@ import '../components/header.ts'
 import '../components/cards.ts'
 import { reverseGeocode } from '../utils/geocoding.ts'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+console.log('API_BASE_URL cargada:', API_BASE_URL);
+
 
 interface PetData {
   id: string;
@@ -28,8 +31,27 @@ export async function initHomePets(params: { goTo: (arg: string) => void }): Pro
   const getPetsNearLocation = async (userLocation?: UserLocation): Promise<PetData[]> => {
     
     try {
-      const response = await fetch(`http://localhost:3000/pets?lat=${userLocation?.latitude}&lng=${userLocation?.longitude}`);
-      if (!response.ok) throw new Error('Network response was not ok');
+      if (!userLocation) {
+        console.warn('No user location available');
+        return [];
+      }
+
+      const url = `${API_BASE_URL}/pets?lat=${userLocation.latitude}&lng=${userLocation.longitude}`;
+      console.log('Fetching from:', url);
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Received non-JSON response:', text.substring(0, 200));
+        throw new Error('API returned non-JSON response');
+      }
+      
       const data = await response.json();
       return data.pets || [];
     } catch (error) {

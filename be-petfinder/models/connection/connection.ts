@@ -12,10 +12,10 @@ const envPath = path.join(__dirname, '../../../.env');
 dotenv.config({ path: envPath });
 
 // Verifica que la variable de entorno exista
-if (!process.env.DEV_DATABASE_URL) {
-  throw new Error("La variable de entorno DEV_DATABASE_URL no está definida");
+if (!process.env.PROD_DATABASE_URL) {
+  throw new Error("La variable de entorno PROD_DATABASE_URL no está definida");
 }
 
-const sequelize = new Sequelize(process.env.DEV_DATABASE_URL);
+const sequelize = new Sequelize(process.env.PROD_DATABASE_URL);
 
 export default sequelize;

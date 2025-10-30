@@ -4,6 +4,7 @@ import Dropzone from 'dropzone';
 import { forwardGeocode } from '../../utils/geocoding.ts';
 import { compressImage } from '../../utils/image-compressor.ts';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface ExistingReport {
   id?: string;
@@ -406,7 +407,7 @@ export function initEditReport(params: {
     });
     
     try {
-      const response = await fetch(`http://localhost:3000/pets/${sessionStorage.getItem('selectedReportId')}`, {
+      const response = await fetch(`${API_BASE_URL}/pets/${sessionStorage.getItem('selectedReportId')}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -441,7 +442,7 @@ export function initEditReport(params: {
       console.log("Mascota reportada como encontrada:", currentData);
       
       try {
-      const response = await fetch(`http://localhost:3000/pets/${sessionStorage.getItem('selectedReportId')}/found`, {
+      const response = await fetch(`${API_BASE_URL}/pets/${sessionStorage.getItem('selectedReportId')}/found`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -471,7 +472,7 @@ export function initEditReport(params: {
       console.log("Reporte eliminado:", currentData);
       
       try {
-        const response = await fetch(`http://localhost:3000/pets/${sessionStorage.getItem('selectedReportId')}`, {
+        const response = await fetch(`${API_BASE_URL}/pets/${sessionStorage.getItem('selectedReportId')}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',

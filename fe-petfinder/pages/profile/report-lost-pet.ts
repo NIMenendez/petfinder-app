@@ -4,6 +4,8 @@ import Dropzone from 'dropzone';
 import { forwardGeocode } from '../../utils/geocoding.ts';
 import { compressImage } from '../../utils/image-compressor.ts';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 
 export function initReportLostPet(params: { goTo: (arg: string) => void }): HTMLElement {
@@ -322,7 +324,7 @@ export function initReportLostPet(params: { goTo: (arg: string) => void }): HTML
     try {
       console.log("imageDataURL en el momento del envío:", imageDataURL ? `presente (${imageDataURL.length} caracteres)` : "NULL");
 
-      const response = await fetch(`http://localhost:3000/pets`, {
+      const response = await fetch(`${API_BASE_URL}/pets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

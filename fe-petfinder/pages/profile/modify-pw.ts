@@ -1,7 +1,7 @@
 import '../../style.css'
 import '../../components/header.ts'
 import '../../components/saved-popup.ts'
-
+import { API_BASE_URL } from '../../utils/api-url.ts'
 
 export function initEditPassword(params: { goTo: (arg: string) => void }): HTMLElement {
   const editPasswordPage = document.createElement("div");
@@ -117,7 +117,7 @@ export function initEditPassword(params: { goTo: (arg: string) => void }): HTMLE
     }
     
     try {
-      const response = await fetch(`http://localhost:3000/users/password/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/users/password/${userId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
