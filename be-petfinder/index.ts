@@ -319,7 +319,7 @@ app.post("/reports", async (req, res) => {
 });
 
 // Catch-all para SPA - servir index.html para todas las rutas no-API
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
