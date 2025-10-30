@@ -1,7 +1,8 @@
 import '../../style.css'
 import '../../components/header.ts'
 import '../../components/saved-popup.ts'
-import { API_BASE_URL } from '../../utils/api-url.ts'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
 export function initEditProfile(params: { goTo: (arg: string) => void }): HTMLElement {
