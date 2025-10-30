@@ -1,11 +1,14 @@
 import express, { Response } from "express"
 import cors from "cors"
+import path from "path"
+import { fileURLToPath } from 'url'
 import { createAuthUser, authenticateUser, verifyToken, verifyTokenAndOwnership, AuthenticatedRequest, checkUserOwnership } from "./controllers/auth.js";
 import { getUserById, getUserPets, updateUserPassword, updateUserName } from "./controllers/users.js";
 import { createLostPet, deleteLostPet, updatePetStatusToFound, updatePetData, getPetsNearby, verifyPetOwnership } from "./controllers/pets.js";
 import { reportPetSighting, sendEmailNotification } from "./controllers/reports.js";
 
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +31,9 @@ app.use(cors(corsOptions))
 // Luego configurar express.json con límite aumentado para imágenes
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb' }))
+
+// Servir archivos estáticos del frontend
+app.use(express.static(path.join(__dirname, '../dist')));
 
 //Registro de usuario (Sign up)(nuevo usuario y auth)
 app.post("/auth", async (req, res) => {
@@ -310,5 +316,10 @@ app.post("/reports", async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Error interno del servidor" });
   }
+});
+
+// Catch-all para SPA - servir index.html para todas las rutas no-API
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
