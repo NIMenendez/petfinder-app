@@ -1,4 +1,4 @@
-import { Pet, Report, User } from "../models/models";
+import { Pet, Report, User } from "../models/models.js";
 import { Resend } from "resend";
 import dotenv from "dotenv";
 dotenv.config({ path: "../.env" });

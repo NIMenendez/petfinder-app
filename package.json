@@ -27,11 +27,9 @@
   "scripts": {
     "be-dev": "nodemon --watch be-petfinder --ext ts --exec \"tsx be-petfinder/index.ts\"",
     "fe-dev": "vite",
-    "build": "npm run build:fe && npm run build:be",
-    "build:fe": "tsc && vite build",
-    "build:be": "tsc -p tsconfig.build.json",
+    "build": "tsc && vite build",
     "preview": "vite preview",
-    "start": "node be-dist/be-petfinder/index.js"
+    "start": "node be-dist/index.js"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",

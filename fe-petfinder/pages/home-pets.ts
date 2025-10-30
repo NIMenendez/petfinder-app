@@ -1,10 +1,10 @@
 import '../style.css'
 import '../components/header.ts'
 import '../components/cards.ts'
-import { reverseGeocode } from '../utils/geocoding.ts'
+import { reverseGeocode } from '../utils/geocoding'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-console.log('API_BASE_URL cargada:', API_BASE_URL);
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000';
+console.log('✅ API_BASE_URL cargada:', API_BASE_URL);
 
 
 interface PetData {

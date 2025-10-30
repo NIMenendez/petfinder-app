@@ -1,7 +1,7 @@
 import '../../style.css'
 import '../../components/header.ts'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000';
 
 export function initSignup(params: { goTo: (arg: string) => void }): HTMLElement {
   const signupPage = document.createElement("div");

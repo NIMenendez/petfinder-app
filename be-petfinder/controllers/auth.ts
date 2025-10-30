@@ -1,5 +1,5 @@
-import { Auth } from "../models/auth";
-import { User } from "../models/models";
+import { Auth } from "../models/auth.js";
+import { User } from "../models/models.js";
 import * as crypto from 'crypto';
 import pkg from 'jsonwebtoken';
 const { sign, verify } = pkg;

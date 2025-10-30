@@ -1,26 +1,24 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "module": "ES2022",
+    "outDir": "./be-dist",
+    "rootDir": "./be-petfinder",
+    "lib": ["ES2022"],
+    "types": ["node"],
     "skipLibCheck": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-
-    /* Linting */
+    "moduleResolution": "node",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true
   },
-  "include": ["fe-petfinder/src", "fe-petfinder/main.ts", "fe-petfinder/router.ts", "fe-petfinder/components/cards.ts", "fe-petfinder/components/header.ts", "fe-petfinder/components/menu.ts", "fe-petfinder/components/report-form.ts", "fe-petfinder/components/saved-popup.ts"]
+  "include": ["be-petfinder/**/*.ts"],
+  "exclude": ["node_modules", "dist", "fe-petfinder", "be-dist"]
 }

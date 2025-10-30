@@ -1,6 +1,6 @@
-import sequelize from "./models/connection/connection"
-import {User, Pet, Report} from "./models/models"
-import { Auth } from "./models/auth";
+import sequelize from "./models/connection/connection.js"
+import {User, Pet, Report} from "./models/models.js"
+import { Auth } from "./models/auth.js";
 
 async function syncDatabase() {
   await sequelize.sync({alter: true});

@@ -1,9 +1,9 @@
-import express, { Request, Response, NextFunction } from "express"
+import express, { Response } from "express"
 import cors from "cors"
-import { createAuthUser, authenticateUser, verifyToken, verifyTokenAndOwnership, AuthenticatedRequest, checkUserOwnership } from "./controllers/auth";
-import { getUserById, getUserPets, updateUserPassword, updateUserName } from "./controllers/users";
-import { createLostPet, deleteLostPet, updatePetStatusToFound, updatePetData, getPetsNearby, verifyPetOwnership } from "./controllers/pets";
-import { reportPetSighting, sendEmailNotification } from "./controllers/reports";
+import { createAuthUser, authenticateUser, verifyToken, verifyTokenAndOwnership, AuthenticatedRequest, checkUserOwnership } from "./controllers/auth.js";
+import { getUserById, getUserPets, updateUserPassword, updateUserName } from "./controllers/users.js";
+import { createLostPet, deleteLostPet, updatePetStatusToFound, updatePetData, getPetsNearby, verifyPetOwnership } from "./controllers/pets.js";
+import { reportPetSighting, sendEmailNotification } from "./controllers/reports.js";
 
 
 

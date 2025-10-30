@@ -1,4 +1,4 @@
-import { reverseGeocode } from '../utils/geocoding.ts'
+import { reverseGeocode } from '../utils/geocoding'
 
 class EditPetCard extends HTMLElement {
   constructor() {

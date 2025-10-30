@@ -1,6 +1,6 @@
-import { Auth } from "../models/auth";
-import { User, Pet } from "../models/models";
-import { hashPassword } from "../controllers/auth";
+import { Auth } from "../models/auth.js";
+import { User, Pet } from "../models/models.js";
+import { hashPassword } from "../controllers/auth.js";
 
 export async function getUserById(userId: number) {
   const user = await User.findByPk(userId);

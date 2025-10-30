@@ -2,7 +2,7 @@ import '../../components/header.ts';
 import '../../components/edit-card.ts';
 import '../../style.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000';
 
 interface Report {
   id: string;

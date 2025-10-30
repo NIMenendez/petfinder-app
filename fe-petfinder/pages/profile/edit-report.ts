@@ -1,10 +1,10 @@
 import '../../style.css'
 import '../../components/header.ts'
 import Dropzone from 'dropzone';
-import { forwardGeocode } from '../../utils/geocoding.ts';
-import { compressImage } from '../../utils/image-compressor.ts';
+import { forwardGeocode } from '../../utils/geocoding';
+import { compressImage } from '../../utils/image-compressor';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000';
 
 interface ExistingReport {
   id?: string;

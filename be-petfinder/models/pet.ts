@@ -1,5 +1,5 @@
 import { Model, DataTypes } from "sequelize"
-import sequelize from "./connection/connection"
+import sequelize from "./connection/connection.js"
 
 
 export class Pet extends Model {}

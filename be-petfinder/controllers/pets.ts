@@ -1,5 +1,5 @@
-import { Pet, User } from "../models/models";
-import { client } from "../lib/algolia"
+import { Pet, User } from "../models/models.js";
+import { client } from "../lib/algolia.js"
 
 export async function createLostPet(userId: number, name: string, lat: number, lng: number, imageUrl: string) {
   try {
@@ -125,7 +125,7 @@ export async function updatePetData(
     
     // Solo hacer la petición a Algolia si hay algo que actualizar
     if (Object.keys(algoliaUpdates).length > 1) { // objectID siempre está presente
-      const algoliaRes = await client.partialUpdateObjects({
+      await client.partialUpdateObjects({
         indexName: 'prod_PETS',
         objects: [algoliaUpdates]
       });

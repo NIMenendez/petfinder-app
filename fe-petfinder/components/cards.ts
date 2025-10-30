@@ -1,5 +1,5 @@
 import './report-form.ts'
-import { reverseGeocode } from '../utils/geocoding.ts'
+import { reverseGeocode } from '../utils/geocoding'
 
 class PetCard extends HTMLElement {
   constructor() {
