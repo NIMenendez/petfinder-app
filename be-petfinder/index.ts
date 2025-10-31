@@ -37,14 +37,23 @@ app.use(express.static(path.join(__dirname, '../dist')));
 
 //Registro de usuario (Sign up)(nuevo usuario y auth)
 app.post("/auth", async (req, res) => {
-  const { email, password, name } = req.body
+  try {
+    const { email, password, name } = req.body
 
-  const { user, created, authCreated } = await createAuthUser(email, password, name)
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: "Email, password y name son requeridos" })
+    }
 
-  if (created && authCreated) {
-    res.status(201).json({ message: "Usuario creado exitosamente", userId: user.get("id") })
-  } else {
-    res.status(409).json({ error: "El email ya está registrado" })
+    const { user, created, authCreated } = await createAuthUser(email, password, name)
+
+    if (created && authCreated) {
+      res.status(201).json({ message: "Usuario creado exitosamente", userId: user.get("id") })
+    } else {
+      res.status(409).json({ error: "El email ya está registrado" })
+    }
+  } catch (error: any) {
+    console.error("Error en POST /auth:", error.message);
+    res.status(500).json({ error: "Error interno del servidor", details: error.message })
   }
 })
 
