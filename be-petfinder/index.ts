@@ -13,14 +13,31 @@ import { createAuthUser, authenticateUser, verifyToken, verifyTokenAndOwnership,
 import { getUserById, getUserPets, updateUserPassword, updateUserName } from "./controllers/users.js";
 import { createLostPet, deleteLostPet, updatePetStatusToFound, updatePetData, getPetsNearby, verifyPetOwnership } from "./controllers/pets.js";
 import { reportPetSighting, sendEmailNotification } from "./controllers/reports.js";
+import sequelize from "./models/connection/connection.js"
+import { User, Pet, Report } from "./models/models.js"
+import { Auth } from "./models/auth.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Sincronizar base de datos al iniciar
+async function initDatabase() {
+  try {
+    console.log("🔄 Sincronizando base de datos...");
+    await sequelize.sync({ alter: true });
+    console.log("✅ Base de datos sincronizada");
+  } catch (error: any) {
+    console.error("❌ Error sincronizando base de datos:", error.message);
+  }
+}
 
 (async () => {
+  // Primero sincronizar la DB
+  await initDatabase();
+  
+  // Luego iniciar el servidor
   app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`✅ Server is running on port ${PORT}`);
   });
 })();
 
