@@ -2,13 +2,17 @@ import express, { Response } from "express"
 import cors from "cors"
 import path from "path"
 import { fileURLToPath } from 'url'
+import * as dotenv from "dotenv"
+
+// Cargar variables de entorno PRIMERO, antes de importar los controllers
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '../.env') });
+
 import { createAuthUser, authenticateUser, verifyToken, verifyTokenAndOwnership, AuthenticatedRequest, checkUserOwnership } from "./controllers/auth.js";
 import { getUserById, getUserPets, updateUserPassword, updateUserName } from "./controllers/users.js";
 import { createLostPet, deleteLostPet, updatePetStatusToFound, updatePetData, getPetsNearby, verifyPetOwnership } from "./controllers/pets.js";
 import { reportPetSighting, sendEmailNotification } from "./controllers/reports.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,13 +42,18 @@ app.use(express.static(path.join(__dirname, '../dist')));
 //Registro de usuario (Sign up)(nuevo usuario y auth)
 app.post("/auth", async (req, res) => {
   try {
+    console.log("=== POST /auth ===");
     const { email, password, name } = req.body
+    console.log("Datos recibidos:", { email, name, passwordLength: password?.length });
 
     if (!email || !password || !name) {
+      console.log("❌ Faltan parámetros requeridos");
       return res.status(400).json({ error: "Email, password y name son requeridos" })
     }
 
+    console.log("📝 Creando usuario...");
     const { user, created, authCreated } = await createAuthUser(email, password, name)
+    console.log("✅ Usuario creado:", { created, authCreated, userId: user.get("id") });
 
     if (created && authCreated) {
       res.status(201).json({ message: "Usuario creado exitosamente", userId: user.get("id") })
@@ -52,7 +61,8 @@ app.post("/auth", async (req, res) => {
       res.status(409).json({ error: "El email ya está registrado" })
     }
   } catch (error: any) {
-    console.error("Error en POST /auth:", error.message);
+    console.error("❌ Error en POST /auth:", error);
+    console.error("Stack:", error.stack);
     res.status(500).json({ error: "Error interno del servidor", details: error.message })
   }
 })

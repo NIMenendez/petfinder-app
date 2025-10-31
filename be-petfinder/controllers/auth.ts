@@ -3,27 +3,20 @@ import { User } from "../models/models.js";
 import * as crypto from 'crypto';
 import pkg from 'jsonwebtoken';
 const { sign, verify } = pkg;
-import * as dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from 'url';
 import { Request, Response, NextFunction } from "express";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Cargar variables de entorno desde la raíz del proyecto
-dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 // Interface para extender Request con información del usuario autenticado
 export interface AuthenticatedRequest extends Request {
   user?: any;
 }
 
-const SECRET_KEY = process.env.SECRET_KEY;
-
-// Verificar que la SECRET_KEY esté definida
-if (!SECRET_KEY) {
-  throw new Error("SECRET_KEY no está definida en las variables de entorno");
+// Función para obtener SECRET_KEY dinámicamente (se llama cuando se necesita, no al cargar el módulo)
+function getSecretKey(): string {
+  const key = process.env.SECRET_KEY;
+  if (!key) {
+    throw new Error("SECRET_KEY no está definida en las variables de entorno");
+  }
+  return key;
 }
 
 export function hashPassword (password: string) {
@@ -56,7 +49,7 @@ export async function authenticateUser(email: string, password: string) {
   try {
     console.log("Intentando autenticar usuario:", email);
     console.log("JWT disponible:", typeof sign === 'function' ? 'SÍ' : 'NO');
-    console.log("SECRET_KEY definida:", SECRET_KEY ? 'SÍ' : 'NO');
+    console.log("SECRET_KEY definida:", process.env.SECRET_KEY ? 'SÍ' : 'NO');
     
     const authUser = await Auth.findOne({
       where: { 
@@ -77,7 +70,7 @@ export async function authenticateUser(email: string, password: string) {
         id: userId,
         email: authUser.get("email")
       }, 
-      SECRET_KEY as string,
+      getSecretKey(),
       { 
         expiresIn: '24h' // Token expira en 24 horas
       }
@@ -113,7 +106,7 @@ export function verifyTokenAndOwnership(req: AuthenticatedRequest, res: Response
       return res.status(401).json({ error: "Formato de token inválido. Use 'Bearer <token>'" });
     }
 
-    const decoded = verify(token, SECRET_KEY as string);
+    const decoded = verify(token, getSecretKey());
     req.user = decoded;
 
     // Luego verificar autorización (solo para endpoints con :id en params)
@@ -149,7 +142,7 @@ export function verifyToken(req: AuthenticatedRequest, res: Response, next: Next
     }
 
     // Verificar el token
-    const decoded = verify(token, SECRET_KEY as string);
+    const decoded = verify(token, getSecretKey());
     
     // Agregar la información del usuario decodificada al request
     req.user = decoded;
