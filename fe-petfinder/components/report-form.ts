@@ -147,7 +147,7 @@ class ReportForm extends HTMLElement {
         reportLocation: formData.get('report-location'),
       };
 
-      const response = await fetch(`http://localhost:3000/reports`, {
+      const response = await fetch(`https://petfinder-app-tc1a.onrender.com/reports`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
